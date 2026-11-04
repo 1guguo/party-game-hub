@@ -1,0 +1,6 @@
+node_modules/
+.env
+*.log
+app.js.remote
+.DS_Store
+Thumbs.db

@@ -1,0 +1,22 @@
+{
+  "name": "party-game-hub",
+  "version": "1.0.0",
+  "description": "朋友到齐，好戏开场 - 实时在线聚会游戏联机大厅与 AI 陪玩平台",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "party-game",
+    "multiplayer",
+    "websocket",
+    "qwen",
+    "ai-companion"
+  ],
+  "author": "1guguo",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

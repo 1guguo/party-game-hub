@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>朋友到齐，好戏开场 - 聚会游戏大厅</title>
+  <meta name="description" content="不用下载，不用注册。一个链接，就是你们的游戏局。17款聚会游戏，实时联机！">
+  <meta property="og:title" content="朋友到齐，好戏开场 🎮">
+  <meta property="og:description" content="你画我猜、数字炸弹、谁是卧底...一个链接就能玩！">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="http://ysgg.abrdns.com/game/">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+  <link rel="stylesheet" href="./styles.css">
+  <style>
+    /* 互动游戏弹窗内部专有样式 */
+    .color-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.15s;
+    }
+    .color-dot.active {
+      border-color: #111827;
+      transform: scale(1.15);
+    }
+    .size-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid #D1D5DB;
+      background: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .size-btn.active {
+      background: #18181B;
+      color: #FFFFFF;
+      border-color: #18181B;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- 1. 顶部 Header -->
+    <header class="site-header">
+      <div class="header-left">
+        <div class="eyebrow">今天，玩点什么？</div>
+        <h1 class="main-title">朋友到齐，好戏开场 <span class="sparkle-icon">✴️</span></h1>
+      </div>
+      <div class="header-right">
+        <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-bottom:4px;">
+          <span id="network-status-badge" style="font-size:12px; font-weight:700; background:#ECFDF5; color:#059669; border:1px solid #A7F3D0; padding:2px 8px; border-radius:9999px; display:inline-flex; align-items:center;">
+            <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10B981; margin-right:5px;"></span>实时联机
+          </span>
+          <span id="player-profile-badge" style="font-size:12px; font-weight:700; background:#F3F4F6; color:#374151; border:1px solid #E5E7EB; padding:2px 8px; border-radius:9999px; cursor:pointer;" title="点击修改你的昵称">
+            🦊 玩家
+          </span>
+        </div>
+        <div>不用下载，不用注册。</div>
+        <div>一个链接，就是你们的游戏局。</div>
+      </div>
+    </header>
+
+    <!-- 2. Hero 区域：左侧焦点推荐 + 右侧快速入房 -->
+    <section class="hero-section">
+      <!-- 今晚的主场 -->
+      <div class="hero-featured-card" id="hero-featured">
+        <!-- 动态由 app.js 注入 -->
+      </div>
+
+      <!-- 快速加入房间 -->
+      <div class="hero-quick-join-card" id="hero-quick-join">
+        <!-- 动态由 app.js 注入 -->
+      </div>
+    </section>
+
+    <!-- 3. 游戏矩阵专区 (17 款游戏) -->
+    <section class="games-hub-section">
+      <div class="games-hub-header">
+        <div class="hub-title-box">
+          <h2 class="hub-title">一点朋友，随时开局</h2>
+          <span class="count-pill" id="games-count-pill">17</span>
+        </div>
+        <div class="hub-subtitle">挑一个，马上开局</div>
+      </div>
+
+      <!-- 分类过滤标签栏 -->
+      <div id="category-filter-bar" style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;"></div>
+
+      <!-- 搜索框 -->
+      <div style="position: relative; margin-bottom: 20px;">
+        <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; opacity: 0.4;">🔍</span>
+        <input type="text" id="search-games-input" class="room-input" placeholder="搜索游戏名称..." style="padding-left: 34px; font-size: 13.5px;" />
+      </div>
+
+      <!-- 4 列游戏卡片网格 -->
+      <div class="games-grid" id="games-grid">
+        <!-- 17 款游戏由 app.js 渲染 -->
+      </div>
+    </section>
+  </div>
+
+  <!-- ==========================================
+       弹窗 1：玩法规则详情 (Rules Modal)
+       ========================================== -->
+  <div class="modal-overlay" id="rule-modal">
+    <div class="modal-card">
+      <button class="modal-close-btn" title="关闭">✕</button>
+      <div id="rule-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       弹窗 2：创建房间 (Create Room Modal)
+       ========================================== -->
+  <div class="modal-overlay" id="create-room-modal">
+    <div class="modal-card">
+      <button class="modal-close-btn" title="关闭">✕</button>
+      <div id="create-room-body"></div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       弹窗 3：通用联机等待大厅 (Room Lobby Modal)
+       ========================================== -->
+  <div class="modal-overlay" id="room-lobby-modal">
+    <div class="modal-card">
+      <button class="modal-close-btn" title="关闭">✕</button>
+      <div id="room-lobby-body"></div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       弹窗 4：你画我猜 (Draw & Guess Playable)
+       ========================================== -->
+  <div class="modal-overlay" id="draw-guess-modal">
+    <div class="modal-card" style="max-width: 840px;">
+      <button class="modal-close-btn" title="关闭">✕</button>
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #F3F4F6; padding-bottom: 10px; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span class="card-badge badge-lime">灵魂画手</span>
+          <h3 style="font-size: 17px; font-weight: 900; color: #111827; margin: 0;">你画我猜 · 实时局</h3>
+          <span style="font-size: 12.5px; color: #4B5563;" id="dg-word-container">题目：<b id="dg-word" style="color: #2563EB; font-size: 15px;">***</b></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 13.5px; font-weight: 800; color: #DC2626; background: #FEF2F2; padding: 2px 8px; border-radius: 9999px; border: 1px solid #FECACA;" id="dg-timer">60s</span>
+          <button class="btn-link-rules" style="font-size: 12px; padding: 2px 8px;" onclick="window.drawGuessGame.newRound()">换个词</button>
+        </div>
+      </div>
+
+      <!-- 角色与当前作画提示栏 -->
+      <div id="dg-role-banner" style="font-size: 12.5px; margin-bottom: 8px; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 4px 10px; border-radius: 8px;">
+        <span>准备就绪，轮流作画中...</span>
+      </div>
+
+      <div class="dg-modal-layout">
+        <!-- 左侧/上方：画板区 -->
+        <div class="dg-canvas-column">
+          <div class="dg-canvas-box" id="dg-canvas-box">
+            <canvas id="dg-canvas"></canvas>
+          </div>
+
+          <!-- 画笔工具栏 (非画师玩家自动隐藏，释放手机屏幕) -->
+          <div id="dg-tools-bar" class="dg-tools-bar">
+            <!-- 调色板 -->
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <div class="color-dot active" style="background: #18181b;" onclick="window.drawGuessGame.color='#18181b'"></div>
+              <div class="color-dot" style="background: #EF4444;" onclick="window.drawGuessGame.color='#EF4444'"></div>
+              <div class="color-dot" style="background: #3B82F6;" onclick="window.drawGuessGame.color='#3B82F6'"></div>
+              <div class="color-dot" style="background: #10B981;" onclick="window.drawGuessGame.color='#10B981'"></div>
+              <div class="color-dot" style="background: #F59E0B;" onclick="window.drawGuessGame.color='#F59E0B'"></div>
+              <div class="color-dot" style="background: #8B5CF6;" onclick="window.drawGuessGame.color='#8B5CF6'"></div>
+            </div>
+
+            <!-- 粗细与清屏 -->
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <button class="size-btn" onclick="window.drawGuessGame.size=2">细</button>
+              <button class="size-btn active" onclick="window.drawGuessGame.size=5">中</button>
+              <button class="size-btn" onclick="window.drawGuessGame.size=12">粗</button>
+              <button class="btn-link-rules" style="padding: 3px 6px; font-size: 11.5px;" onclick="window.drawGuessGame.undo()">↩ 撤销</button>
+              <button class="btn-link-rules" style="padding: 3px 6px; font-size: 11.5px; color: #DC2626;" onclick="window.drawGuessGame.clear()">清屏</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧/下方：猜词聊天区 -->
+        <div class="dg-chat-column">
+          <div>
+            <div style="font-size: 12.5px; font-weight: 800; color: #111827; margin-bottom: 6px; border-bottom: 1px solid #E5E7EB; padding-bottom: 4px; display: flex; justify-content: space-between;">
+              <span>💬 猜词公屏</span>
+              <span style="font-size: 10.5px; color: #9CA3AF;">输入即可抢猜</span>
+            </div>
+            <div id="dg-chat-logs" class="dg-chat-logs">
+              <div style="font-size:11.5px; color:#9CA3AF; text-align:center; padding:8px 0;">画板落笔即可在下方输入框猜词，越快猜出得分越高！</div>
+            </div>
+          </div>
+
+          <div style="margin-top: 6px;">
+            <!-- 手机端快捷猜词方向药丸 -->
+            <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;">
+              <button type="button" class="btn-link-rules" style="font-size: 11px; padding: 2px 7px; background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 9999px;" onclick="window.drawGuessGame.sendGuess('动物')">🐶 动物？</button>
+              <button type="button" class="btn-link-rules" style="font-size: 11px; padding: 2px 7px; background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 9999px;" onclick="window.drawGuessGame.sendGuess('水果')">🍎 水果？</button>
+              <button type="button" class="btn-link-rules" style="font-size: 11px; padding: 2px 7px; background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 9999px;" onclick="window.drawGuessGame.sendGuess('交通工具')">🚗 交通？</button>
+              <button type="button" class="btn-link-rules" style="font-size: 11px; padding: 2px 7px; background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 9999px;" onclick="window.drawGuessGame.sendGuess('日常用品')">📦 用品？</button>
+            </div>
+            <div class="dg-guess-row">
+              <input 
+                type="text" 
+                id="dg-guess-input" 
+                class="room-input" 
+                placeholder="输入你猜的词并发送..." 
+                style="font-size: 13.5px;"
+                onkeypress="if(event.key==='Enter'){
+                  const txt = this.value.trim();
+                  if(txt){
+                    window.drawGuessGame.sendGuess(txt);
+                    this.value = '';
+                  }
+                }"
+              />
+              <button class="btn-primary-blue" style="width: auto; padding: 0 16px; font-weight: 800; white-space: nowrap;" onclick="
+                const inp = document.getElementById('dg-guess-input');
+                if (inp && inp.value.trim()) {
+                  window.drawGuessGame.sendGuess(inp.value.trim());
+                  inp.value = '';
+                }
+              ">猜！</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       弹窗 5：数字炸弹 (Number Bomb Playable)
+       ========================================== -->
+  <div class="modal-overlay" id="number-bomb-modal">
+    <div class="modal-card" style="max-width: 500px; text-align: center;">
+      <button class="modal-close-btn" title="关闭">✕</button>
+
+      <span class="card-badge badge-rose" style="margin-bottom: 8px; display: inline-block;">快速热场</span>
+      <h2 style="font-size: 22px; font-weight: 900; color: #111827;">💣 数字炸弹</h2>
+      <p style="font-size: 13px; color: #6B7280; margin-bottom: 16px;">踩中炸弹数字的玩家接受大冒险惩罚！</p>
+
+      <!-- 炸弹视觉 -->
+      <div style="width: 80px; height: 80px; margin: 0 auto 12px;" id="nb-bomb-svg">
+        <svg viewBox="0 0 100 100" class="w-full h-full" fill="none" stroke="#18181b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="46" cy="56" r="24" fill="#18181B" />
+          <rect x="56" y="30" width="8" height="6" rx="1" fill="#18181b" transform="rotate(35 60 35)" />
+          <path d="M64 30 C70 26 72 18 78 20" stroke="#18181b" stroke-width="2.5" />
+          <path d="M78 20 L84 14 M78 20 L86 22 M78 20 L82 26" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round" />
+        </svg>
+      </div>
+
+      <!-- 范围指示 -->
+      <div id="nb-range" style="font-size: 32px; font-weight: 900; margin-bottom: 8px;">1 ~ 100</div>
+
+      <!-- 紧张度条 -->
+      <div style="width: 100%; height: 8px; background: #E5E7EB; border-radius: 9999px; overflow: hidden; margin-bottom: 16px;">
+        <div id="nb-tension" style="width: 0%; height: 100%; transition: width 0.3s;" class="bg-emerald-400"></div>
+      </div>
+
+      <div id="nb-turn" style="font-size: 14px; font-weight: 700; color: #374151; margin-bottom: 14px;">当前轮到：你</div>
+
+      <!-- 快捷策略选数药丸 -->
+      <div id="nb-quick-pills" style="display: flex; justify-content: center; gap: 8px; margin-bottom: 10px;"></div>
+
+      <!-- 猜数输入 -->
+      <div style="display: flex; gap: 8px; max-width: 300px; margin: 0 auto 16px;">
+        <input type="number" id="nb-input" class="room-input" placeholder="输入猜数" style="text-align: center; font-size: 16px; font-weight: 700;" />
+        <button class="btn-primary-yellow" style="padding: 0 20px; width: auto;" onclick="
+          const val = document.getElementById('nb-input').value;
+          window.numberBombGame.guess(val);
+          document.getElementById('nb-input').value = '';
+        ">猜！</button>
+      </div>
+
+      <!-- 猜测历史 -->
+      <div id="nb-history" style="max-height: 120px; overflow-y: auto; text-align: left; background: #F9FAFB; padding: 8px 12px; border-radius: 10px; margin-bottom: 16px;"></div>
+
+      <button class="btn-link-rules" onclick="window.numberBombGame.restart()">🔄 重置炸弹再来一局</button>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       弹窗 6：大话骰 (Liar's Dice Playable)
+       ========================================== -->
+  <div class="modal-overlay" id="liars-dice-modal">
+    <div class="modal-card" style="max-width: 540px; text-align: center;">
+      <button class="modal-close-btn" title="关闭">✕</button>
+
+      <span class="card-badge badge-orange" style="margin-bottom: 8px; display: inline-block;">桌神摇摇</span>
+      <h2 style="font-size: 22px; font-weight: 900; color: #111827;">🎲 大话骰对决 · 实时局</h2>
+      <p style="font-size: 13px; color: #6B7280; margin-bottom: 12px;" id="ld-turn">当前轮到喊点：房主</p>
+
+      <!-- 骰盅展示区 -->
+      <div style="background: #FFFBEB; border: 2px solid #F59E0B; border-radius: 16px; padding: 20px; position: relative; margin-bottom: 16px;">
+        <!-- 骰盅盖子遮罩 -->
+        <div id="ld-cup-cover" style="position: absolute; inset: 0; background: #B45309; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #FFFFFF; font-weight: 800; z-index: 5; transition: opacity 0.25s;" class="opacity-100">
+          <div style="font-size: 32px; margin-bottom: 4px;">🫙</div>
+          <div>骰盅已盖严 (点击下方按钮偷看自己的骰子)</div>
+        </div>
+
+        <div style="font-size: 12px; font-weight: 700; color: #B45309; margin-bottom: 10px;">你的骰子</div>
+        <div id="ld-my-dice" style="display: flex; justify-content: center; gap: 10px;"></div>
+      </div>
+
+      <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 16px;">
+        <button class="btn-primary-blue" style="font-size: 13px; padding: 8px 16px;" onclick="window.liarsDiceGame.toggleCup()">
+          👁️ 偷看/盖上骰盅
+        </button>
+        <button class="btn-link-rules" style="border: 1px solid #D1D5DB; font-size: 13px;" onclick="window.liarsDiceGame.reroll()">
+          🔄 重新开局摇骰
+        </button>
+      </div>
+
+      <!-- 当前叫点 -->
+      <div style="background: #F3F4F6; border-radius: 12px; padding: 12px; margin-bottom: 16px;">
+        <div style="font-size: 12px; color: #6B7280; margin-bottom: 4px;">当前场上叫点</div>
+        <div id="ld-current-call" style="font-size: 20px; font-weight: 900; color: #111827;">等待首发玩家叫点...</div>
+      </div>
+
+      <!-- 叫点操作 -->
+      <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap;">
+        <select id="ld-count" class="room-input" style="width: auto; font-weight: 700;">
+          <option value="2">2 个</option>
+          <option value="3">3 个</option>
+          <option value="4" selected>4 个</option>
+          <option value="5">5 个</option>
+          <option value="6">6 个</option>
+          <option value="7">7 个</option>
+          <option value="8">8 个</option>
+        </select>
+        <select id="ld-pip" class="room-input" style="width: auto; font-weight: 700;">
+          <option value="1">1点 (通用)</option>
+          <option value="2">2点</option>
+          <option value="3">3点</option>
+          <option value="4">4点</option>
+          <option value="5" selected>5点</option>
+          <option value="6">6点</option>
+        </select>
+        <button class="btn-primary-yellow" style="width: auto; padding: 0 18px; font-weight: 800;" onclick="
+          const c = parseInt(document.getElementById('ld-count').value);
+          const p = parseInt(document.getElementById('ld-pip').value);
+          window.liarsDiceGame.call(c, p);
+        ">加注喊点！</button>
+        <button class="btn-link-rules" style="background: #FEE2E2; color: #DC2626; font-weight: 800; padding: 0 16px; border: 1.5px solid #DC2626;" onclick="window.liarsDiceGame.openShowdown()">
+          💥 开！
+        </button>
+      </div>
+
+      <!-- 开牌结果 -->
+      <div id="ld-showdown-area" style="display: none;"></div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       弹窗 7：五子棋 (Gomoku Playable)
+       ========================================== -->
+  <div class="modal-overlay" id="gomoku-modal">
+    <div class="modal-card" style="max-width: 580px; text-align: center;">
+      <button class="modal-close-btn" title="关闭">✕</button>
+
+      <span class="card-badge badge-amber" style="margin-bottom: 8px; display: inline-block;">经典耐玩</span>
+      <h2 style="font-size: 22px; font-weight: 900; color: #111827;">⚫⚪ 五子棋对弈</h2>
+      <p style="font-size: 13px; color: #6B7280; margin-bottom: 12px;" id="gomoku-status">当前回合：黑棋 (房主)</p>
+
+      <!-- 15x15 棋盘容器 -->
+      <div style="background-color: #FDE68A; border: 2.5px solid #78350F; border-radius: 12px; padding: 12px; display: inline-block; box-shadow: 0 6px 18px rgba(0,0,0,0.1); margin-bottom: 14px;">
+        <div id="gomoku-grid" style="display: grid; grid-template-columns: repeat(15, 1fr); gap: 0;"></div>
+      </div>
+
+      <div style="display: flex; justify-content: center; gap: 12px;">
+        <button class="btn-link-rules" style="border: 1px solid #D1D5DB;" onclick="window.gomokuGame.init()">
+          🔄 重新开局
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       弹窗 8：谁是卧底 (Undercover Playable)
+       ========================================== -->
+  <div class="modal-overlay" id="undercover-modal">
+    <div class="modal-card" style="max-width: 560px;">
+      <button class="modal-close-btn" title="关闭">✕</button>
+
+      <div style="text-align: center; margin-bottom: 14px;">
+        <span class="card-badge badge-purple" style="margin-bottom: 6px; display: inline-block;">阵营推理</span>
+        <h2 style="font-size: 22px; font-weight: 900; color: #111827;">🕵️ 谁是卧底 · 实时局</h2>
+        <p style="font-size: 13px; color: #6B7280;" id="uc-speaker-info">当前阶段：自由发言</p>
+      </div>
+
+      <!-- 我的秘密词条卡片 -->
+      <div style="background: #F5F3FF; border: 2px dashed #8B5CF6; border-radius: 14px; padding: 16px; text-align: center; margin-bottom: 16px;">
+        <div style="font-size: 12px; font-weight: 700; color: #7C3AED; margin-bottom: 6px;">你的秘密底牌 (防偷看)</div>
+        <div id="uc-word-text" style="font-size: 26px; font-weight: 900; color: #4C1D95; letter-spacing: 2px; margin-bottom: 10px;">
+          🙈 点击偷看我的词
+        </div>
+        <button class="btn-primary-blue" id="uc-cover-btn" style="padding: 6px 16px; font-size: 13px;" onclick="window.undercoverGame.toggleWordCover()">
+          👁️ 偷看
+        </button>
+      </div>
+
+      <!-- 投票放逐区 -->
+      <div style="background: #F9FAFB; border: 1.5px solid #E5E7EB; border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+        <div style="font-size: 13px; font-weight: 800; color: #111827; margin-bottom: 8px;">🗳️ 投票放逐嫌疑人：</div>
+        <div id="uc-vote-list"></div>
+      </div>
+
+      <!-- 胜负揭晓区 -->
+      <div id="uc-result-area" style="display: none;"></div>
+
+      <div style="text-align: center;">
+        <button class="btn-link-rules" onclick="window.undercoverGame.restart()">
+          🔄 重新分配身份再来一局
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       弹窗 9：海龟汤 (Turtle Soup Playable)
+       ========================================== -->
+  <div class="modal-overlay" id="turtle-soup-modal">
+    <div class="modal-card" style="max-width: 620px;">
+      <button class="modal-close-btn" title="关闭">✕</button>
+
+      <div style="text-align: center; margin-bottom: 12px;">
+        <span class="card-badge badge-teal" style="margin-bottom: 6px; display: inline-block;">情境推理</span>
+        <h2 style="font-size: 22px; font-weight: 900; color: #111827;" id="ts-title">🍲 海龟汤 · 实时推理</h2>
+      </div>
+
+      <!-- 汤面展示卡片 -->
+      <div style="background: #F0FDFA; border: 2px solid #0D9488; border-radius: 14px; padding: 16px; margin-bottom: 14px;">
+        <div style="font-size: 13px; font-weight: 800; color: #0F766E; margin-bottom: 6px;">🥣 汤面（谜题）：</div>
+        <div id="ts-surface" style="font-size: 14px; color: #134E4A; line-height: 1.6; font-weight: 600;">正在加载汤面...</div>
+        <div id="ts-bottom" style="display: none;"></div>
+      </div>
+
+      <!-- 提问与线索流 -->
+      <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 12px; margin-bottom: 12px;">
+        <div style="font-size: 13px; font-weight: 800; color: #111827; margin-bottom: 6px;">
+          💬 提问记录 (AI/房主自动裁判：是/否/无关/关键)：
+        </div>
+        <div id="ts-q-list" style="max-height: 140px; overflow-y: auto;"></div>
+        <!-- 提问灵感快捷药丸 -->
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 6px;">
+          <span style="font-size: 11px; color: #6B7280; line-height: 24px;">💡 灵感：</span>
+          <button type="button" class="btn-link-rules" style="font-size: 11.5px; padding: 2px 8px; background: #EEF2F6; border-radius: 9999px;" onclick="document.getElementById('ts-input').value='事件发生时有第三人在场吗？'; document.getElementById('ts-input').focus();">👤 有第三人？</button>
+          <button type="button" class="btn-link-rules" style="font-size: 11.5px; padding: 2px 8px; background: #EEF2F6; border-radius: 9999px;" onclick="document.getElementById('ts-input').value='跟主角的特殊职业有关吗？'; document.getElementById('ts-input').focus();">💼 与职业有关？</button>
+          <button type="button" class="btn-link-rules" style="font-size: 11.5px; padding: 2px 8px; background: #EEF2F6; border-radius: 9999px;" onclick="document.getElementById('ts-input').value='这件事情是意外发生的吗？'; document.getElementById('ts-input').focus();">⚡ 是意外吗？</button>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="ts-input" class="room-input" placeholder="针对汤面提问（需是非问句，如：男人是不是生病了？）" onkeypress="if(event.key==='Enter'){
+            const v = this.value.trim();
+            if(v){ window.turtleSoupGame.ask(v); this.value = ''; }
+          }" />
+          <button class="btn-primary-yellow" style="width: auto; padding: 0 16px; font-weight: 800;" onclick="
+            const inp = document.getElementById('ts-input');
+            if(inp && inp.value.trim()){ window.turtleSoupGame.ask(inp.value.trim()); inp.value = ''; }
+          ">提问</button>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <button class="btn-primary-blue" style="padding: 8px 18px; font-size: 13px;" onclick="window.turtleSoupGame.solve()">
+          💡 揭晓完整汤底（真相）
+        </button>
+        <button class="btn-link-rules" onclick="window.turtleSoupGame.restart()">
+          🔄 换一碗新汤
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       弹窗 10：真心话大冒险 (Truth or Dare Playable)
+       ========================================== -->
+  <div class="modal-overlay" id="truth-dare-modal">
+    <div class="modal-card" style="max-width: 520px; text-align: center;">
+      <button class="modal-close-btn" title="关闭">✕</button>
+
+      <span class="card-badge badge-rose" style="margin-bottom: 8px; display: inline-block;">聚会破冰</span>
+      <h2 style="font-size: 22px; font-weight: 900; color: #111827;">🍷 真心话大冒险</h2>
+      <div id="td-target" style="font-size: 15px; font-weight: 700; color: #374151; margin-bottom: 14px;">🎯 命中玩家：等待抽题...</div>
+
+      <!-- 题目卡片 -->
+      <div style="background: #FFF1F2; border: 2px solid #F43F5E; border-radius: 16px; padding: 24px; min-height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+        <div id="td-content" style="font-size: 16px; font-weight: 800; color: #9F1239; line-height: 1.6;">
+          点击下方按钮抽取真心话或大冒险！
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 16px;">
+        <button class="btn-primary-blue" style="padding: 10px 22px; font-size: 14px; font-weight: 800;" onclick="window.truthDareGame.draw('truth')">
+          💙 抽真心话
+        </button>
+        <button class="btn-primary-yellow" style="padding: 10px 22px; font-size: 14px; font-weight: 800;" onclick="window.truthDareGame.draw('dare')">
+          🔥 抽大冒险
+        </button>
+      </div>
+
+      <!-- 历史记录 -->
+      <div id="td-history" style="max-height: 110px; overflow-y: auto; text-align: left; background: #F9FAFB; padding: 8px 12px; border-radius: 10px;"></div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       弹窗 11：通用联机舞台 (Party Arena - UNO, 狼人杀, 阿瓦隆等)
+       ========================================== -->
+  <div class="modal-overlay" id="party-arena-modal">
+    <div class="modal-card" style="max-width: 680px;">
+      <button class="modal-close-btn" title="关闭">✕</button>
+
+      <div style="text-align: center; margin-bottom: 14px;">
+        <span class="card-badge badge-green" style="margin-bottom: 6px; display: inline-block;">实时联机对局</span>
+        <h2 style="font-size: 22px; font-weight: 900; color: #111827;" id="arena-game-title">聚会游戏 · 联机局</h2>
+        <p style="font-size: 13px; color: #6B7280;">所有人已在同一个房间，系统与 AI 陪伴推进！</p>
+      </div>
+
+      <!-- 游戏对局中央舞台 -->
+      <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 14px; padding: 14px; text-align: center; margin-bottom: 14px;">
+        <div style="font-size: 28px; margin-bottom: 2px;">🎮</div>
+        <div style="font-size: 15px; font-weight: 800; color: #0F172A; margin-bottom: 2px;" id="arena-stage-title">对局已正式开场！</div>
+        <div style="font-size: 12px; color: #64748B; max-width: 440px; margin: 0 auto 10px;" id="arena-stage-desc">
+          所有玩家已连接到同一房间。可通过公屏交流，或使用下方公共道具裁决推进！
+        </div>
+
+        <!-- 倒计时进度条展示 (默认隐藏) -->
+        <div id="arena-timer-box" style="margin-bottom: 10px; display: none;">
+          <div id="arena-timer-display" style="font-size: 13px; font-weight: 800; color: #DC2626; margin-bottom: 4px;">⏱️ 发言倒计时: 60s</div>
+          <div style="width: 100%; height: 6px; background: #E2E8F0; border-radius: 9999px; overflow: hidden;">
+            <div id="arena-timer-bar" style="width: 100%; height: 100%; background: #EF4444; transition: width 1s linear;"></div>
+          </div>
+        </div>
+
+        <!-- 聚会互动道具箱 -->
+        <div style="display: flex; justify-content: center; gap: 6px; flex-wrap: wrap;">
+          <button class="party-toolkit-btn" onclick="window.app.rollPartyDice()">
+            <span>🎲</span> 掷骰子
+          </button>
+          <button class="party-toolkit-btn" onclick="window.app.flipPartyCoin()">
+            <span>🪙</span> 抛硬币
+          </button>
+          <button class="party-toolkit-btn" onclick="window.app.drawPartyLottery()">
+            <span>🎯</span> 抽签发言
+          </button>
+          <button class="party-toolkit-btn" onclick="window.app.startArenaTimer(60)">
+            <span>⏱️</span> 60s发言计时
+          </button>
+          <button class="party-toolkit-btn" style="background:#FFFBEB; border-color:#FCD34D; color:#B45309;" onclick="window.partyNetwork.addAI()">
+            <span>🤖</span> 召唤AI加入
+          </button>
+        </div>
+      </div>
+
+      <!-- 入座玩家席位 -->
+      <div style="margin-bottom: 12px;">
+        <div style="font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 6px; display:flex; align-items:center; gap:6px;">
+          <span>当前入座玩家</span>
+          <span id="arena-player-count" style="font-size: 11px; color:#2563EB; background:#EFF6FF; border:1px solid #BFDBFE; border-radius:9999px; padding:0 6px;">0人</span>
+        </div>
+        <div id="arena-players-list" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+      </div>
+
+      <!-- 实时公屏交流 -->
+      <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 10px 12px; margin-bottom: 16px;">
+        <div style="font-size: 12px; font-weight: 700; color: #4B5563; margin-bottom: 6px; display:flex; justify-content:space-between; align-items:center;">
+          <span>💬 对局交流 / 发言公屏</span>
+          <span style="font-size: 10.5px; color: #9CA3AF;">支持与 AI 互动 (@AI 必回)</span>
+        </div>
+        <div id="arena-chat-logs" style="max-height: 100px; overflow-y: auto; font-size: 12px; line-height: 1.6; margin-bottom: 8px;"></div>
+        <!-- 快捷操作药丸 -->
+        <div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px;">
+          <button type="button" class="btn-link-rules" style="font-size:11px; padding:2px 8px; background:#FFFFFF; border:1px solid #E5E7EB; border-radius:9999px;" onclick="window.partyNetwork.sendChat('🃏 出牌！轮到谁了？')">🃏 出牌</button>
+          <button type="button" class="btn-link-rules" style="font-size:11px; padding:2px 8px; background:#FFFFFF; border:1px solid #E5E7EB; border-radius:9999px;" onclick="window.partyNetwork.sendChat('🧐 我感觉有人在演，大家怎么看？')">🧐 怀疑</button>
+          <button type="button" class="btn-link-rules" style="font-size:11px; padding:2px 8px; background:#FFFFFF; border:1px solid #E5E7EB; border-radius:9999px;" onclick="window.partyNetwork.sendChat('🤖 AI你怎么看？@AI')">🤖 问问AI</button>
+          <button type="button" class="btn-link-rules" style="font-size:11px; padding:2px 8px; background:#FFFFFF; border:1px solid #E5E7EB; border-radius:9999px;" onclick="window.partyNetwork.sendChat('👏 漂亮！精彩一局！')">👏 精彩</button>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="arena-chat-input" class="room-input" placeholder="输入聊天内容或出牌发言..." style="font-size: 13px;" onkeypress="if(event.key==='Enter'){ const v=this.value.trim(); if(v){ window.partyNetwork.sendChat(v); this.value=''; } }" />
+          <button class="btn-primary-blue" style="width: auto; padding: 0 16px; font-size: 13px; font-weight: 700; white-space: nowrap;" onclick="const inp=document.getElementById('arena-chat-input'); if(inp && inp.value.trim()){ window.partyNetwork.sendChat(inp.value.trim()); inp.value=''; }">发送</button>
+        </div>
+      </div>
+
+      <!-- 快捷操作与退出 -->
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <button class="btn-primary-blue" style="padding: 8px 18px; font-size: 13px;" onclick="window.app.returnToCurrentRoom()">
+          📋 返回房间等待大厅
+        </button>
+        <button class="btn-link-rules" onclick="window.app.closeModal()">
+          暂留后台
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 全局 Toast 提示容器 -->
+  <div class="toast-container" id="global-toast">
+    提示信息
+  </div>
+
+  <!-- 音效切换浮动按钮 -->
+  <button class="floating-sound-toggle" id="sound-toggle-btn" title="开关游戏音效">
+    🔊
+  </button>
+
+  <!-- 引入游戏数据、音频引擎与主逻辑 -->
+  <script src="./games-data.js"></script>
+  <script src="./audio.js"></script>
+  <script src="./icons.js"></script>
+  <script src="./network.js"></script>
+  <script src="./minigames.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
