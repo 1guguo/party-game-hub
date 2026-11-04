@@ -112,14 +112,25 @@ class DrawGuessGame {
       const wordEl = document.getElementById('dg-word');
       const timerEl = document.getElementById('dg-timer');
       const bannerEl = document.getElementById('dg-role-banner');
+      const toolsBar = document.getElementById('dg-tools-bar');
 
       if (msg.isDrawer) {
         if (wordEl) wordEl.textContent = msg.word;
         if (bannerEl) bannerEl.innerHTML = `<span style="color:#10B981; font-weight:800;">🎨 轮到你作画！请画出：【${msg.word}】</span>`;
+        if (toolsBar) toolsBar.style.display = 'flex';
+        if (this.canvas) {
+          this.canvas.style.cursor = 'crosshair';
+          this.canvas.style.touchAction = 'none';
+        }
         window.app?.showToast(`🎨 轮到你画了！题目：${msg.word}`, 'success');
       } else {
         if (wordEl) wordEl.textContent = `提示：${msg.wordHint}`;
-        if (bannerEl) bannerEl.innerHTML = `<span>画师正在作画：<b>${msg.drawerName}</b></span>`;
+        if (bannerEl) bannerEl.innerHTML = `<span style="color:#2563EB; font-weight:700;">👀 画师【${msg.drawerName}】正在作画，快在下方猜词！</span>`;
+        if (toolsBar) toolsBar.style.display = 'none'; // 猜词玩家隐藏画笔工具，腾出全屏视野
+        if (this.canvas) {
+          this.canvas.style.cursor = 'default';
+          this.canvas.style.touchAction = 'auto'; // 允许手机手指平滑上下滑动看公屏
+        }
       }
 
       if (timerEl) timerEl.textContent = `${msg.timeLeft}s`;
@@ -182,16 +193,27 @@ class DrawGuessGame {
     this.canvas.onmouseleave = () => this.stopDrawing();
 
     this.canvas.ontouchstart = (e) => {
+      const isDrawer = !window.partyNetwork?.connected || window.partyNetwork?.isDrawer;
+      if (!isDrawer) {
+        return; // 猜词玩家不拦截触摸，允许手机滑动页面
+      }
       e.preventDefault();
       const touch = e.touches[0];
       this.startDrawing(touch);
     };
     this.canvas.ontouchmove = (e) => {
+      const isDrawer = !window.partyNetwork?.connected || window.partyNetwork?.isDrawer;
+      if (!isDrawer) return;
       e.preventDefault();
       const touch = e.touches[0];
       this.draw(touch);
     };
-    this.canvas.ontouchend = () => this.stopDrawing();
+    this.canvas.ontouchend = (e) => {
+      const isDrawer = !window.partyNetwork?.connected || window.partyNetwork?.isDrawer;
+      if (!isDrawer) return;
+      e.preventDefault();
+      this.stopDrawing();
+    };
   }
 
   getPos(e) {
