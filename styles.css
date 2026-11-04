@@ -771,7 +771,7 @@ body {
 /* 音效浮动按钮 */
 .floating-sound-toggle {
   position: fixed;
-  bottom: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   right: 20px;
   width: 42px;
   height: 42px;
@@ -786,6 +786,16 @@ body {
   cursor: pointer;
   z-index: 100;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (max-width: 600px) {
+  .floating-sound-toggle {
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    right: 14px;
+    width: 38px;
+    height: 38px;
+    font-size: 16px;
+  }
 }
 
 .floating-sound-toggle:hover {
@@ -822,6 +832,11 @@ body {
 
 #sticky-room-bar {
   animation: slideUpBar 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  position: fixed;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
 }
 
 /* 分类筛选栏 filter chip 样式 */

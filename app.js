@@ -70,7 +70,7 @@ class PartyApp {
       bar = document.createElement('div');
       bar.id = 'sticky-room-bar';
       bar.style.position = 'fixed';
-      bar.style.bottom = '16px';
+      bar.style.bottom = 'calc(16px + env(safe-area-inset-bottom, 0px))';
       bar.style.left = '50%';
       bar.style.transform = 'translateX(-50%)';
       bar.style.zIndex = '9999';
@@ -94,7 +94,7 @@ class PartyApp {
 
     bar.style.display = 'flex';
     bar.style.position = 'fixed';
-    bar.style.bottom = '16px';
+    bar.style.bottom = 'calc(16px + env(safe-area-inset-bottom, 0px))';
     bar.style.left = '50%';
     bar.style.transform = 'translateX(-50%)';
     bar.style.zIndex = '9999';
