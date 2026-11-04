@@ -1144,7 +1144,10 @@ class PartyApp {
         title: `朋友到齐，好戏开场 - ${gameTitle}`,
         text: text,
         url: inviteLink
-      }).catch(() => {
+      }).then(() => {
+        this.showToast('✅ 邀请已成功分享！', 'success');
+      }).catch((err) => {
+        if (err && err.name === 'AbortError') return;
         this.copyWeChatInvite(roomCode, gameTitle, inviteLink);
       });
     } else {
@@ -1261,11 +1264,13 @@ class PartyApp {
       if (savedMute) {
         window.sounds.muted = true;
         soundToggle.textContent = '🔇';
+        soundToggle.classList.add('muted');
       }
       soundToggle.addEventListener('click', () => {
         const isMuted = window.sounds.toggleMute();
         localStorage.setItem('party_sound_muted', isMuted);
         soundToggle.textContent = isMuted ? '🔇' : '🔊';
+        soundToggle.classList.toggle('muted', isMuted);
         this.showToast(isMuted ? '已开启静音模式' : '已开启游戏音效');
       });
     }

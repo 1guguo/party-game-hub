@@ -798,6 +798,13 @@ body {
   }
 }
 
+.floating-sound-toggle.muted {
+  opacity: 0.65;
+  background: #F3F4F6;
+  border-color: #D1D5DB;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
 .floating-sound-toggle:hover {
   transform: scale(1.1);
   border-color: #18181B;

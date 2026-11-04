@@ -401,12 +401,12 @@
       </div>
 
       <!-- 我的秘密词条卡片 -->
-      <div style="background: #F5F3FF; border: 2px dashed #8B5CF6; border-radius: 14px; padding: 16px; text-align: center; margin-bottom: 16px;">
-        <div style="font-size: 12px; font-weight: 700; color: #7C3AED; margin-bottom: 6px;">你的秘密底牌 (防偷看)</div>
+      <div style="background: #F5F3FF; border: 2px dashed #8B5CF6; border-radius: 14px; padding: 16px; text-align: center; margin-bottom: 16px; cursor: pointer; user-select: none; transition: transform 0.15s ease;" onclick="window.undercoverGame.toggleWordCover()" title="点击偷看/盖上底牌">
+        <div style="font-size: 12px; font-weight: 700; color: #7C3AED; margin-bottom: 6px;">你的秘密底牌 (点击翻转 · 防偷看)</div>
         <div id="uc-word-text" style="font-size: 26px; font-weight: 900; color: #4C1D95; letter-spacing: 2px; margin-bottom: 10px;">
           🙈 点击偷看我的词
         </div>
-        <button class="btn-primary-blue" id="uc-cover-btn" style="padding: 6px 16px; font-size: 13px;" onclick="window.undercoverGame.toggleWordCover()">
+        <button class="btn-primary-blue" id="uc-cover-btn" style="padding: 6px 16px; font-size: 13px;" onclick="event.stopPropagation(); window.undercoverGame.toggleWordCover()">
           👁️ 偷看
         </button>
       </div>

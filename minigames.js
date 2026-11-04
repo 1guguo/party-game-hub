@@ -733,11 +733,13 @@ class UndercoverGame {
   }
 
   toggleWordCover() {
+    window.sounds?.click();
     this.isCovered = !this.isCovered;
     const coverEl = document.getElementById('uc-word-text');
     const btn = document.getElementById('uc-cover-btn');
+    const displayWord = this.myWord && this.myWord !== '***' ? this.myWord : '等待分配...';
     if (coverEl) {
-      coverEl.textContent = this.isCovered ? '🙈 点击偷看我的词' : `【${this.myWord}】`;
+      coverEl.textContent = this.isCovered ? '🙈 点击偷看我的词' : `【${displayWord}】`;
     }
     if (btn) {
       btn.textContent = this.isCovered ? '👁️ 偷看' : '🙈 盖上防偷看';
