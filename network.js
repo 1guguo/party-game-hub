@@ -251,8 +251,12 @@ class PartyNetwork {
   }
 
   // --- 发送业务操作 ---
-  addAI() {
-    this.send({ type: 'add_ai' });
+  addAI(count = 1) {
+    this.send({ type: 'add_ai', count: parseInt(count) || 1 });
+  }
+
+  removeAI(aiId) {
+    this.send({ type: 'remove_ai', aiId });
   }
 
   updateProfile(name, avatar) {

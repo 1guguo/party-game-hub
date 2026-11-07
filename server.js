@@ -383,30 +383,40 @@ wss.on('connection', (ws) => {
       // 3. 【召唤 AI 陪玩入座】
       case 'add_ai': {
         if (!currentRoom) return;
-        if (currentRoom.players.length >= currentRoom.maxPlayers) {
+        const availableSlots = currentRoom.maxPlayers - currentRoom.players.length;
+        if (availableSlots <= 0) {
           clientWs.send(JSON.stringify({ type: 'error', message: '房间人数已满，无法再召唤 AI！' }));
           return;
         }
 
-        const ai = aiCompanion.getRandomAI();
-        const aiPlayer = {
-          id: 'ai_' + Math.random().toString(36).substring(2, 7),
-          name: ai.name,
-          avatar: ai.avatar,
-          isHost: false,
-          ready: true,
-          score: 0,
-          isAI: true,
-          online: true,
-          aiProfile: ai,
-          ws: null
-        };
+        const requestedCount = Math.max(1, parseInt(msg.count) || 1);
+        const actualCount = Math.min(requestedCount, availableSlots);
 
-        currentRoom.players.push(aiPlayer);
+        const addedAIs = [];
+        for (let i = 0; i < actualCount; i++) {
+          const existingNames = currentRoom.players.map(p => p.name);
+          const ai = aiCompanion.getDistinctAI(existingNames);
+          const aiPlayer = {
+            id: 'ai_' + Math.random().toString(36).substring(2, 7),
+            name: ai.name,
+            avatar: ai.avatar,
+            isHost: false,
+            ready: true,
+            score: 0,
+            isAI: true,
+            online: true,
+            aiProfile: ai,
+            ws: null
+          };
+
+          currentRoom.players.push(aiPlayer);
+          addedAIs.push(ai);
+        }
         
+        const namesList = addedAIs.map(a => `【${a.name}】`).join('、');
         currentRoom.messages.push({
           sender: '系统',
-          text: `🤖 AI 陪玩【${ai.name}】已加入房间（由 Qwen3.5-4B 驱动）！`
+          text: `🤖 AI 陪玩 ${namesList} 已加入房间（共 ${actualCount} 位，由 Qwen3.5-4B 驱动）！`
         });
 
         broadcastToRoom(currentRoom, {
@@ -415,22 +425,45 @@ wss.on('connection', (ws) => {
         });
         broadcastToAll({ type: 'active_rooms_list', rooms: getActiveRoomsList() });
 
-        // AI 热情打招呼
-        setTimeout(async () => {
-          const greet = await aiCompanion.generateChat(ai, `房间创建，当前游戏是 ${currentRoom.gameTitle}`, '跟大家打个热情幽默的招呼');
-          if (greet && currentRoom) {
-            const chatMsg = {
-              sender: ai.name,
-              text: greet,
-              time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-            };
-            currentRoom.messages.push(chatMsg);
-            broadcastToRoom(currentRoom, {
-              type: 'chat_broadcast',
-              message: chatMsg
-            });
-          }
-        }, 500);
+        // AI 依次热情打招呼（错开发送）
+        addedAIs.forEach((ai, idx) => {
+          setTimeout(async () => {
+            if (!currentRoom) return;
+            const greet = await aiCompanion.generateChat(ai, `房间创建，当前游戏是 ${currentRoom.gameTitle}`, '跟大家打个热情幽默的招呼');
+            if (greet && currentRoom) {
+              const chatMsg = {
+                sender: ai.name,
+                text: greet,
+                time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+              };
+              currentRoom.messages.push(chatMsg);
+              broadcastToRoom(currentRoom, {
+                type: 'chat_broadcast',
+                message: chatMsg
+              });
+            }
+          }, 400 + idx * 700);
+        });
+        break;
+      }
+
+      // 3.1 【移除特定 AI 陪玩】
+      case 'remove_ai': {
+        if (!currentRoom) return;
+        const targetAiId = msg.aiId;
+        const idx = currentRoom.players.findIndex(p => p.id === targetAiId && p.isAI);
+        if (idx !== -1) {
+          const removed = currentRoom.players.splice(idx, 1)[0];
+          currentRoom.messages.push({
+            sender: '系统',
+            text: `👋 AI 陪玩【${removed.name}】已离开房间。`
+          });
+          broadcastToRoom(currentRoom, {
+            type: 'room_state',
+            room: getSafeRoomData(currentRoom)
+          });
+          broadcastToAll({ type: 'active_rooms_list', rooms: getActiveRoomsList() });
+        }
         break;
       }
 

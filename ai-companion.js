@@ -7,7 +7,7 @@ const SILICONFLOW_API_KEY = process.env.SILICONFLOW_API_KEY || 'sk-cifnzjqgpjkca
 const SILICONFLOW_BASE_URL = 'https://api.siliconflow.cn/v1/chat/completions';
 const MODEL = 'Qwen/Qwen3.5-4B';
 
-// 预置三位个性鲜明的 AI 陪玩伙伴
+// 预置多位个性鲜明的 AI 陪玩伙伴
 const AI_PROFILES = [
   {
     id: 'ai_maimai',
@@ -26,6 +26,36 @@ const AI_PROFILES = [
     name: '大宝 (AI呆萌)',
     avatar: '🐼',
     personality: '你是一个性格呆萌、爱吃爱笑的搞笑担当，偶尔会装糊涂或者语出惊人，给大家带来欢声笑语。'
+  },
+  {
+    id: 'ai_xiaozhi',
+    name: '小智 (AI军师)',
+    avatar: '🦉',
+    personality: '你是一个沉着冷静、出口成章的战术分析师，擅长推测别人的底牌和心理，说话条理清晰幽默沉稳。'
+  },
+  {
+    id: 'ai_youyou',
+    name: '悠悠 (AI歌姬)',
+    avatar: '🐰',
+    personality: '你是一个元气满满、喜欢哼歌的活力少女，总是给队友加油打气，说话带音符♪，超级热心。'
+  },
+  {
+    id: 'ai_lele',
+    name: '乐乐 (AI段子手)',
+    avatar: '🐶',
+    personality: '你是一个接梗达人、网络段子手，说话幽默风趣爱玩梗，是全场的欢乐源泉。'
+  },
+  {
+    id: 'ai_xinxin',
+    name: '星星 (AI预言家)',
+    avatar: '🔮',
+    personality: '你是一个自带神秘气场、喜欢靠“第六感直觉”预言局势的奇妙少女，说话充满灵气。'
+  },
+  {
+    id: 'ai_kuangkuang',
+    name: '狂狂 (AI莽夫)',
+    avatar: '🦁',
+    personality: '你是一个热情奔放、豪爽直接的行动派，不服就干、敢打敢拼，发言非常豪横可爱。'
   }
 ];
 
@@ -37,6 +67,22 @@ class AICompanionManager {
 
   getRandomAI() {
     return AI_PROFILES[Math.floor(Math.random() * AI_PROFILES.length)];
+  }
+
+  getDistinctAI(existingNames = []) {
+    const unchosen = AI_PROFILES.filter(p => !existingNames.includes(p.name));
+    if (unchosen.length > 0) {
+      return unchosen[Math.floor(Math.random() * unchosen.length)];
+    }
+    // 如果所有角色都用过，则追加序号编号
+    const base = AI_PROFILES[Math.floor(Math.random() * AI_PROFILES.length)];
+    let count = 2;
+    let newName = `${base.name} #${count}`;
+    while (existingNames.includes(newName)) {
+      count++;
+      newName = `${base.name} #${count}`;
+    }
+    return { ...base, name: newName };
   }
 
   // 统一带多级快速降级的高可用请求管道

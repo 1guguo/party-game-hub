@@ -1131,6 +1131,62 @@ body {
   border-color: #8B5CF6 !important;
   background: linear-gradient(135deg, #F5F3FF, #EDE9FE) !important;
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+  position: relative;
+}
+
+.ai-kick-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 19px;
+  height: 19px;
+  background: #EF4444;
+  color: #FFFFFF;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+  line-height: 1;
+  z-index: 5;
+}
+
+.ai-kick-badge:hover {
+  transform: scale(1.2);
+  background: #DC2626;
+}
+
+.ai-count-chip {
+  background: #FFFFFF;
+  border: 1.5px solid #DDD6FE;
+  color: #6D28D9;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.ai-count-chip:hover {
+  background: #F5F3FF;
+  border-color: #7C3AED;
+  transform: translateY(-1px);
+}
+
+.ai-count-chip.primary {
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
+  color: #FFFFFF;
+  border-color: #6D28D9;
+  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.25);
 }
 
 .player-card-lobby.is-me {

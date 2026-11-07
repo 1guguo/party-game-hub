@@ -776,11 +776,13 @@ class PartyApp {
 
     const listEl = document.getElementById('arena-players-list');
     if (listEl && room.players) {
-      listEl.innerHTML = room.players.map(p => {
+      const emptySlots = Math.max(0, (room.maxPlayers || 8) - room.players.length);
+      const playersHtml = room.players.map(p => {
         const isMe = p.id === window.partyNetwork?.playerId;
         const hostTag = p.isHost ? '<span style="font-size:9.5px; background:#FEF3C7; color:#B45309; padding:1px 4px; border-radius:4px; font-weight:700;">👑房主</span>' : '';
         const aiTag = p.isAI ? '<span class="ai-model-tag" style="border-radius:4px;">🤖 AI</span>' : '';
         const meTag = isMe ? '<span style="font-size:9px; background:#DBEAFE; color:#1E40AF; padding:1px 4px; border-radius:4px; font-weight:700;">我</span>' : '';
+        const aiKick = p.isAI ? `<span onclick="event.stopPropagation(); window.partyNetwork.removeAI('${p.id}'); window.sounds?.click();" style="color:#EF4444; cursor:pointer; font-size:12px; font-weight:800; margin-left:4px;" title="送走此AI">✕</span>` : '';
         return `
           <div style="background:#FFFFFF; border:1.5px solid ${isMe ? '#3B82F6' : '#E2E8F0'}; border-radius:10px; padding:6px 10px; display:flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.04);">
             <span style="font-size:18px;">${p.avatar || '👤'}</span>
@@ -788,9 +790,18 @@ class PartyApp {
             ${hostTag}
             ${aiTag}
             ${meTag}
+            ${aiKick}
           </div>
         `;
       }).join('');
+
+      const addBtnHtml = emptySlots > 0 ? `
+        <button onclick="window.app.openAddAISelector(${emptySlots}); window.sounds?.pop();" style="background:#F5F3FF; border:1.5px dashed #8B5CF6; color:#7C3AED; border-radius:10px; padding:6px 12px; font-size:12px; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:4px;">
+          <span>🤖➕</span> 加AI (${emptySlots})
+        </button>
+      ` : '';
+
+      listEl.innerHTML = playersHtml + addBtnHtml;
     }
 
     const chatEl = document.getElementById('arena-chat-logs');
@@ -911,29 +922,22 @@ class PartyApp {
     const baseUrl = window.location.origin + window.location.pathname.replace(/\/index\.html$/, '').replace(/\/$/, '') + '/';
     const inviteLink = `${baseUrl}?room=${room.code}`;
 
-    // 判断是否需要召唤 AI（真实玩家数 < 最小开局人数时才显示）
-    const realPlayers = (room.players || []).filter(p => !p.isAI);
-    const minPlayers = 2; // 大多数游戏最少2人
-    const hasEnoughPlayers = realPlayers.length >= minPlayers;
-    const hasAI = (room.players || []).some(p => p.isAI);
-
+    // 判断房间空位与 AI 召唤支持
+    const emptySlots = Math.max(0, (room.maxPlayers || 8) - (room.players || []).length);
     let aiSection = '';
-    if (hasAI) {
-      // 已有 AI，不再显示召唤按钮
-      aiSection = '';
-    } else if (hasEnoughPlayers) {
+    if (emptySlots > 0) {
       aiSection = `
-        <div class="ai-enough-players">
-          <span>✅</span>
-          <span>人数已够，可以开始了！如需 AI 陪玩可在开局后加入</span>
-        </div>
+        <button class="btn-summon-ai" onclick="window.app.openAddAISelector(${emptySlots})">
+          <span style="font-size:16px;">🤖</span>
+          <span>召唤 AI 陪玩 (可加${emptySlots > 1 ? '1~' + emptySlots + '位' : '1位'})</span>
+        </button>
       `;
     } else {
       aiSection = `
-        <button class="btn-summon-ai" onclick="window.partyNetwork.addAI()">
-          <span style="font-size:16px;">🤖</span>
-          <span>朋友还没到？先召唤 AI 陪玩</span>
-        </button>
+        <div class="ai-enough-players" style="background:#F0FDF4; border:1px solid #BBF7D0; color:#15803D;">
+          <span>🎉</span>
+          <span>房间已满员</span>
+        </div>
       `;
     }
 
@@ -1053,6 +1057,63 @@ class PartyApp {
     this.showModal(modalEl);
   }
 
+  // 召唤 AI 陪玩数量选择器
+  openAddAISelector(maxCanAdd) {
+    window.sounds?.pop();
+    if (!maxCanAdd) {
+      const room = this.currentRoom;
+      maxCanAdd = room ? Math.max(0, (room.maxPlayers || 8) - (room.players || []).length) : 4;
+    }
+    if (maxCanAdd <= 0) {
+      this.showToast('房间人数已满，无法再加入 AI！', 'error');
+      return;
+    }
+
+    let modalEl = document.getElementById('add-ai-modal');
+    if (!modalEl) {
+      modalEl = document.createElement('div');
+      modalEl.className = 'modal-overlay';
+      modalEl.id = 'add-ai-modal';
+      document.body.appendChild(modalEl);
+    }
+
+    const quickCounts = [1, 2, 3, 4].filter(c => c <= maxCanAdd);
+    const hasFill = !quickCounts.includes(maxCanAdd);
+
+    modalEl.innerHTML = `
+      <div class="modal-card" style="max-width: 440px; padding: 22px;">
+        <button class="modal-close-btn" onclick="window.app.returnToCurrentRoom()">✕</button>
+        <div style="text-align: center; margin-bottom: 16px;">
+          <div style="font-size: 38px; line-height: 1; margin-bottom: 8px;">🤖</div>
+          <h2 style="font-size: 20px; font-weight: 900; color: #111827;">召唤 AI 陪玩入座</h2>
+          <p style="font-size: 13px; color: #6B7280; margin-top: 4px;">当前房间尚有 <b style="color: #7C3AED;">${maxCanAdd}</b> 个空位，请选择加入数量：</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px;">
+          ${quickCounts.map(cnt => `
+            <button class="ai-count-chip ${cnt === 1 ? 'primary' : ''}" onclick="window.partyNetwork.addAI(${cnt}); window.sounds?.pop(); window.app.returnToCurrentRoom(); window.app.showToast('🚀 已召唤 ${cnt} 位 AI 伙伴！', 'success');">
+              <span>🤖</span> +${cnt} 位 AI
+            </button>
+          `).join('')}
+          ${hasFill ? `
+            <button class="ai-count-chip" style="grid-column: span 2; background: linear-gradient(135deg, #F59E0B, #D97706); color: #fff; border-color: #D97706;" onclick="window.partyNetwork.addAI(${maxCanAdd}); window.sounds?.pop(); window.app.returnToCurrentRoom(); window.app.showToast('⚡ 一键满员！已召唤 ${maxCanAdd} 位 AI 伙伴！', 'success');">
+              <span>⚡</span> 一键凑齐满员 (+${maxCanAdd} 位)
+            </button>
+          ` : ''}
+        </div>
+
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 12px; font-size: 12px; color: #64748B; line-height: 1.5; text-align: left;">
+          <div style="font-weight: 700; color: #334155; margin-bottom: 2px;">💡 贴心提示：</div>
+          • AI 由硅基流动 <b>Qwen3.5-4B</b> 模型驱动，具备真实桌游策略与趣味互动。<br>
+          • 预置 8 位不同个性（甜妹/军师/段子手等），每位 AI 头像与发言各异。<br>
+          • 随时点击 AI 头像右上角的 <b>✕</b> 可自由送走 AI。
+        </div>
+      </div>
+    `;
+
+    this.showModal(modalEl);
+  }
+
   getLobbyPlayersHtml(room) {
     if (!room || !room.players) return '';
     const myId = window.partyNetwork?.playerId;
@@ -1065,9 +1126,11 @@ class PartyApp {
       const meTag = isMe ? '<span style="font-size:9px; background:#DBEAFE; color:#1E40AF; padding:1px 4px; border-radius:4px; font-weight:700;">我</span>' : '';
       const meClickAttr = isMe ? 'onclick="window.app.cycleMyAvatar()" title="点击换头像"' : '';
       const meCursor = isMe ? 'cursor:pointer;' : '';
+      const aiKickBtn = p.isAI ? `<div class="ai-kick-badge" onclick="event.stopPropagation(); window.partyNetwork.removeAI('${p.id}'); window.sounds?.click();" title="送走此 AI 伙伴">✕</div>` : '';
 
       return `
         <div class="player-card-lobby ${p.isHost ? 'is-host' : ''} ${p.isAI ? 'is-ai' : ''} ${isMe ? 'is-me' : ''}" style="${meCursor} padding:8px 6px; text-align:center; position:relative;" ${meClickAttr}>
+          ${aiKickBtn}
           <div style="font-size: 26px; line-height: 1.1; margin-bottom: 4px;">${p.avatar || '👤'}</div>
           <div style="font-size: 11px; font-weight: 700; color: #1F2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${p.name}">
             ${p.name || '玩家'}
@@ -1082,24 +1145,15 @@ class PartyApp {
       `;
     });
 
-    // 填充剩余席位
+    // 填充剩余席位（所有空位均可点击召唤 AI，或点击弹窗选择多位）
     const emptyCount = Math.max(0, room.maxPlayers - room.players.length);
     for (let i = 0; i < emptyCount; i++) {
-      if (i === 0 && canAddAI) {
-        playerItems.push(`
-          <div class="player-card-lobby" style="padding:8px 4px; border:1.5px dashed #CBD5E1; background:#F8FAFC; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; cursor:pointer;" onclick="window.partyNetwork.addAI(); window.sounds?.pop();" title="缺少朋友？点击召唤AI陪玩">
-            <div style="font-size:22px; line-height:1;">🤖➕</div>
-            <div style="font-size:10.5px; font-weight:700; color:#7C3AED; margin-top:3px;">缺人召唤AI</div>
-          </div>
-        `);
-      } else {
-        playerItems.push(`
-          <div class="player-card-lobby" style="padding:8px 4px; border:1.5px dashed #E5E7EB; background:#F9FAFB; opacity:0.6; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-            <div style="font-size:20px; line-height:1; color:#9CA3AF;">🪑</div>
-            <div style="font-size:10px; color:#9CA3AF; margin-top:3px;">空位虚席</div>
-          </div>
-        `);
-      }
+      playerItems.push(`
+        <div class="player-card-lobby" style="padding:8px 4px; border:1.5px dashed #CBD5E1; background:#F8FAFC; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; cursor:pointer;" onclick="window.app.openAddAISelector(${emptyCount}); window.sounds?.pop();" title="空位（点击选择召唤 1~${emptyCount} 位 AI 入座）">
+          <div style="font-size:22px; line-height:1;">🤖➕</div>
+          <div style="font-size:10.5px; font-weight:700; color:#7C3AED; margin-top:3px;">点我召唤AI</div>
+        </div>
+      `);
     }
 
     return playerItems.join('');
