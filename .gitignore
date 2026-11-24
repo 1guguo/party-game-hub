@@ -4,3 +4,8 @@ node_modules/
 app.js.remote
 .DS_Store
 Thumbs.db
+*.pem
+*.key
+*PRIVATE*
+*KEY*
+*BUNDLE*
